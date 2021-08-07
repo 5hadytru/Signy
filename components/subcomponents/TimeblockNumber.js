@@ -18,7 +18,7 @@ const styles = StyleSheet.create({
     text: {
         fontSize: 20,
         textAlign: 'left',
-        marginLeft: "6%"
+        marginLeft: "10%"
     }
 })
 

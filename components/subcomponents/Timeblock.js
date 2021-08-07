@@ -7,7 +7,7 @@ import Animated, { useAnimatedStyle, useSharedValue, withRepeat, withSequence, w
 import Icon from 'react-native-vector-icons/FontAwesome'
 
 
-const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes, triggerEditTimeblockModal, sendNewTimes, sendDragAndDropCompletion, currentTimeblocks, currentLayoutData, nextTimeblock, sendObject, deleteTimeblock, thisTBIndex, justCreated}) => {
+const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes, triggerEditTimeblockModal, sendNewTimes, sendDragAndDropCompletion, currentTimeblocks, currentLayoutData, nextTimeblock, sendObject, deleteTimeblock, thisTBIndex}) => {
     
   // drag n drop/pull/slide related state vars
     const [clickedTop, setClickedTop] = useState()
@@ -241,8 +241,9 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
       // get timeblockIndex of dropzone + location of drop within dropzone; if dropzoneIndex = -1 -> invalid dropzone
       const dropzoneObj = getDropzone(translationY, longPressYCoord, dragAndDropData.dropzones)
 
+      /* console.log("--------------")
       console.log(dragAndDropData)
-      console.log(dropzoneObj)
+      console.log(dropzoneObj) */
 
       // send dropzone's timeblockIndex, thisTimeblockIndex, and userDraggedUp to TimeblockScreen for setting state and hitting DB
       if (dropzoneObj.dropzoneIndex != -1){
@@ -292,7 +293,7 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
           }}
           delayLongPress={500}
           onPress={() => {
-            console.log(dynamicOffset.value, hitSlop, offset)
+            // console.log(dynamicOffset.value, hitSlop, offset)
             if (isTimeblockPressable.current == true){
               triggerEditTimeblockModal(id) 
             }
@@ -409,7 +410,7 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
                     signalDragAndDropCompletion(e.nativeEvent.translationY)
                   }
                   else{
-                    console.log(dynamicOffset.value)
+                    // console.log(dynamicOffset.value)
                     setHitSlop({
                       bottom: 0,
                       left: Math.abs(translateX.value) > 0 ? -30 : 0,

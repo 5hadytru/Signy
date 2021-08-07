@@ -94,6 +94,9 @@ const TimeblockScreen = ({route, navigation}) => {
     // stores the timestamp of the last valid click so we can detect a double click; does not need to persist across renders
     const [lastClickTime, setLastClickTime] = useState(null);
 
+    // hold the y value of the current ScrollView distance so we can add it to the pageY used in detectDoubleClick
+    const [currentScrollDist, setCurrentScrollDist] = useState(() => 0);
+
     // when a double click occurs, trigger the creation of a timeblock by
     const detectDoubleClick = (event) => {
 
@@ -106,7 +109,7 @@ const TimeblockScreen = ({route, navigation}) => {
 
             // this function will compute the new timeblock -> shift timeblocks if necessary -> insert the new timeblock (and change order) -> set state and DB 
             createTimeblock(
-                event.nativeEvent.locationY, 
+                event.nativeEvent.pageY + currentScrollDist - 140, // 113.6 = header height
                 timeblockLayoutData, 
                 mainState.timeblocks, 
                 lastTimeblockID,
@@ -281,69 +284,72 @@ const TimeblockScreen = ({route, navigation}) => {
             add timeblock btn
      */
     return (
-        <TouchableWithoutFeedback onPress={detectDoubleClick}>
-            <View style={styles.container}>
-                <UniversalNavbar navigation={navigation} />
-                <DateHeader date={mainState.date} changeDate={changeAmt => changeDate(changeAmt, mainState.date, navigation)} />
+        <View style={styles.container}>
+            <UniversalNavbar navigation={navigation} />
+            <DateHeader date={mainState.date} changeDate={changeAmt => changeDate(changeAmt, mainState.date, navigation)} />
+                <ScrollView 
+                    style={styles.scrollView} 
+                    showsVerticalScrollIndicator={false}
+                    onScroll={e => setCurrentScrollDist(e.nativeEvent.contentOffset.y)}
+                >
+                <TouchableWithoutFeedback onPress={detectDoubleClick}>
+                    <View id="timeblocks" style={{marginTop: "6%", elevation: 1, zIndex: 1}}>
+                        { // render timeblocks with proper pixel offset
+                            mainState.timeblocks.length > 0 ? getTimeblockProps().map((timeblockTuple) =>{
+                                return (<Timeblock
+                                            key={mainState.timeblocks[timeblockTuple[0]].id}
+                                            id={mainState.timeblocks[timeblockTuple[0]].id}
+                                            taskName={mainState.timeblocks[timeblockTuple[0]].taskName}
+                                            startTime={mainState.timeblocks[timeblockTuple[0]].startTime}
+                                            endTime={mainState.timeblocks[timeblockTuple[0]].endTime}
+                                            offset={timeblockTuple[1]}
+                                            minutes={mainState.timeblocks[timeblockTuple[0]].minutes}
+                                            category={mainState.timeblocks[timeblockTuple[0]].category}
+                                            triggerEditTimeblockModal={triggerEditTimeblockModal}
+                                            sendNewTimes={onTimeblockTimeChange}
+                                            sendDragAndDropCompletion={onDragAndDropCompletion}
+                                            sendObject={handleTimeblockObjects}
+                                            currentTimeblocks={mainState.timeblocks}
+                                            currentLayoutData={{
+                                                layoutData: timeblockLayoutData,
+                                                numTimeblocks: mainState.timeblocks.length
+                                            }}
+                                            nextTimeblock={(mainState.timeblocks.length > timeblockTuple[0] + 1)
+                                                && (timeblockObjects.length >= mainState.timeblocks.length)
+                                                ? timeblockObjects.find(obj => {
+                                                    try{
+                                                        return obj.id == mainState.timeblocks[timeblockTuple[0] + 1].id
+                                                    }
+                                                    catch{
+                                                        return null
+                                                    }
+                                                }) 
+                                                : null  }
+                                            deleteTimeblock={onTimeblockDeletion}
+                                            thisTBIndex={timeblockTuple[0]}
+                                        />)
+                            }) : <Text style={styles.noTimeblocksText}>{"No timeblocks"}</Text>
+                        }
+                    </View>
+                    </TouchableWithoutFeedback>
+                    <View id="leftNumbers" style={{ marginTop: "3%", position: "absolute", elevation: 0, zIndex: 0 }}>
+                        { // each numberTuple is of the form ["[1-12] [AM|PM]", [0-inf]]
+                            getTimeblockNumberProps().map((numberTuple) => {
+                                return <TimeblockNumber 
+                                            key={numberTuple[2]}
+                                            time={numberTuple[0]} 
+                                            marginBottom={numberTuple[1]}
+                                        />
+                        })}
+                    </View>
+                    <View style={{height: 60} /*extra height at bottom of page*/}></View>
 
-                    <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                        <View id="timeblocks" style={{marginTop: "6%", elevation: 1, zIndex: 1}}>
-                            { // render timeblocks with proper pixel offset
-                                mainState.timeblocks.length > 0 ? getTimeblockProps().map((timeblockTuple) =>{
-                                    return (<Timeblock
-                                                key={mainState.timeblocks[timeblockTuple[0]].id}
-                                                id={mainState.timeblocks[timeblockTuple[0]].id}
-                                                taskName={mainState.timeblocks[timeblockTuple[0]].taskName}
-                                                startTime={mainState.timeblocks[timeblockTuple[0]].startTime}
-                                                endTime={mainState.timeblocks[timeblockTuple[0]].endTime}
-                                                offset={timeblockTuple[1]}
-                                                minutes={mainState.timeblocks[timeblockTuple[0]].minutes}
-                                                category={mainState.timeblocks[timeblockTuple[0]].category}
-                                                triggerEditTimeblockModal={triggerEditTimeblockModal}
-                                                sendNewTimes={onTimeblockTimeChange}
-                                                sendDragAndDropCompletion={onDragAndDropCompletion}
-                                                sendObject={handleTimeblockObjects}
-                                                currentTimeblocks={mainState.timeblocks}
-                                                currentLayoutData={{
-                                                    layoutData: timeblockLayoutData,
-                                                    numTimeblocks: mainState.timeblocks.length
-                                                }}
-                                                nextTimeblock={(mainState.timeblocks.length > timeblockTuple[0] + 1)
-                                                    && (timeblockObjects.length >= mainState.timeblocks.length)
-                                                    ? timeblockObjects.find(obj => {
-                                                        try{
-                                                            return obj.id == mainState.timeblocks[timeblockTuple[0] + 1].id
-                                                        }
-                                                        catch{
-                                                            return null
-                                                        }
-                                                    }) 
-                                                    : null  }
-                                                deleteTimeblock={onTimeblockDeletion}
-                                                thisTBIndex={timeblockTuple[0]}
-                                            />)
-                                }) : <Text style={styles.noTimeblocksText}>{"No timeblocks"}</Text>
-                            }
-                        </View>
-                        <View id="leftNumbers" style={{ marginTop: "3%", position: "absolute", elevation: 0, zIndex: 0 }}>
-                            { // each numberTuple is of the form ["[1-12] [AM|PM]", [0-inf]]
-                                getTimeblockNumberProps().map((numberTuple) => {
-                                    return <TimeblockNumber 
-                                                key={numberTuple[2]}
-                                                time={numberTuple[0]} 
-                                                marginBottom={numberTuple[1]}
-                                            />
-                            })}
-                        </View>
-                        <View style={{height: 60} /*extra height at bottom of page*/}></View>
-
-                        {/* from this point on are components that are invisible by default */}
-                        <TimeblockModal 
-                            modalProps={modalProps}
-                        />
-                    </ScrollView>
-            </View>
-        </TouchableWithoutFeedback>
+                    {/* from this point on are components that are invisible by default */}
+                    <TimeblockModal 
+                        modalProps={modalProps}
+                    />
+                </ScrollView>
+        </View>
     )
 }
 

@@ -238,7 +238,7 @@ export const deleteTimeblock = async (timeblockID, timeblocks, orderedTimeblockI
 
 /**
  * 
- * @param {number} yOffset 
+ * @param {number} dblClickYOffset 
  *      absolute y coord of the dbl click
  * @param {Array} timeblockLayoutData 
  *      array of heights and y offsets for each timeblock
@@ -251,7 +251,7 @@ export const deleteTimeblock = async (timeblockID, timeblocks, orderedTimeblockI
  * @param {Function} mainDispatch 
  * @returns {void}
  */
-export const createTimeblock = async (yOffset, timeblockLayoutData, existingTimeblocks, lastTBID, existingOrderedTimeblockIDs, mainDispatch, dateString) => {
+export const createTimeblock = async (dblClickYOffset, timeblockLayoutData, existingTimeblocks, lastTBID, existingOrderedTimeblockIDs, mainDispatch, dateString) => {
 
     if (existingTimeblocks.length == 0){
 
@@ -289,7 +289,7 @@ export const createTimeblock = async (yOffset, timeblockLayoutData, existingTime
     }
 
     // compute new timeblock's object + shift data
-    const newTimeblockData = getCreateTimeblockData(yOffset, timeblockLayoutData, existingTimeblocks, lastTBID)
+    const newTimeblockData = getCreateTimeblockData(dblClickYOffset, timeblockLayoutData, existingTimeblocks, lastTBID)
 
     let newTimeblocks = existingTimeblocks.map(tb => ({...tb}))
 
@@ -352,7 +352,7 @@ export const createTimeblock = async (yOffset, timeblockLayoutData, existingTime
 
 
 /**
- * @param {number} yOffset 
+ * @param {number} dblClickOffset 
  *      Distance of double click from top of ScrollView
  * @param {Array} timeblockLayoutData 
  *      heights and yOffsets of each timeblock
@@ -363,10 +363,13 @@ export const createTimeblock = async (yOffset, timeblockLayoutData, existingTime
  * 
  * This will be handled similar to drag and drop
  */
-export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTimeblocks, lastTBID) => {
+export const getCreateTimeblockData = (dblClickYOffset, timeblockLayoutData, existingTimeblocks, lastTBID) => {
+
+    console.log("--------------")
+    console.log(timeblockLayoutData, dblClickYOffset)
 
     // the user double clicked on the header
-    if (yOffset < 0) { yOffset = 0 } 
+    if (dblClickYOffset < 0) { dblClickdblClickYOffset = 0 } 
 
     // get the nearest inter-timeblock junction
     let minDistance = 50000
@@ -376,8 +379,8 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
     }
     for (let i = 0; i < timeblockLayoutData.length; i++){
         
-        const distanceFromTopOfTB = Math.abs(timeblockLayoutData[i].yOffset - yOffset)
-        const distanceFromBottomOfTB = Math.abs(timeblockLayoutData[i].yOffset + timeblockLayoutData[i].heightPx - yOffset)
+        const distanceFromTopOfTB = Math.abs(timeblockLayoutData[i].yOffset - dblClickYOffset)
+        const distanceFromBottomOfTB = Math.abs(timeblockLayoutData[i].yOffset + timeblockLayoutData[i].heightPx - dblClickYOffset)
 
         if (distanceFromTopOfTB > minDistance){ // the last iterated timeblock was the closest
             break
@@ -393,6 +396,8 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
             break
         }
     }
+
+    console.log(closestJunction)
 
     // this var will hold the amount that we have to shift the timeblocks below the new timeblock (will only shift while necessary)
     let shiftAmt = 0;
@@ -437,7 +442,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
                 }
             }
             else{ // place the center of the timeblock where the user dbl clicked if possible
-                if (yOffset <= 20){ // new timeblock will start at 12am and be 30 mins
+                if (dblClickYOffset <= 20){ // new timeblock will start at 12am and be 30 mins
                     return {
                         newTB: { 
                             id: lastTBID + 1, 
@@ -452,7 +457,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
                         closestJunction: closestJunction
                     }
                 }
-                else if (timeblockLayoutData[0].yOffset - yOffset <= 20){ // new timeblock will end at the first timeblock and be 30 mins
+                else if (timeblockLayoutData[0].yOffset - dblClickYOffset <= 20){ // new timeblock will end at the first timeblock and be 30 mins
                     return {
                         newTB: { 
                             id: lastTBID + 1, 
@@ -468,7 +473,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
                     }
                 }
                 else{ // we can place the middle of the timeblock where the user dbl clicked
-                    let newTBStartTimeMinutesFromFirstTB = Math.ceil((timeblockLayoutData[0].yOffset - yOffset) + 15)
+                    let newTBStartTimeMinutesFromFirstTB = Math.ceil((timeblockLayoutData[0].yOffset - dblClickYOffset) + 15)
                     const newTBStartTimeMinutesFromFirstTBMod5 = newTBStartTimeMinutesFromFirstTB % 5
                     newTBStartTimeMinutesFromFirstTB +=  newTBStartTimeMinutesFromFirstTBMod5 > 0 ? 5 - (newTBStartTimeMinutesFromFirstTBMod5) 
                                                                                                 : 0
@@ -492,7 +497,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
         }
         // if there are <=15 mins available before the first timeblock (on the screen) or placing the center of the timeblock at the dbl click would
         // lead to overlap, just place the new timeblock's endTime at the startTime of the first timeblock
-        else if ((firstTBStartTimeMins <= 15) || ((yOffset + 20) >= timeblockLayoutData[0].yOffset)){
+        else if ((firstTBStartTimeMins <= 15) || ((dblClickYOffset + 20) >= timeblockLayoutData[0].yOffset)){
 
             // round new endTime down to nearest multiple of 5 if necessary
             if (firstTBStartTimeMins % 5){
@@ -527,7 +532,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
             }
         }
         else{ // there is room to place the center of the new timeblock at the yOffset of the dbl click
-            let newTBStartTimeMinutesFromFirstTB = Math.ceil(timeblockLayoutData[0].yOffset - yOffset + 15)
+            let newTBStartTimeMinutesFromFirstTB = Math.ceil(timeblockLayoutData[0].yOffset - dblClickYOffset + 15)
             const newTBStartTimeMinutesFromFirstTBMod5 = newTBStartTimeMinutesFromFirstTB % 5
             newTBStartTimeMinutesFromFirstTB +=  newTBStartTimeMinutesFromFirstTBMod5 > 0 ? 5 - (newTBStartTimeMinutesFromFirstTBMod5) 
                                                                                           : 0
@@ -602,7 +607,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
             }
             else{ // place the center of the timeblock where the user dbl clicked if possible
 
-                if ((yOffset - bottomOfLastTBPx) <= 20){ // new timeblock will start at the end of the last TB and be 30 mins
+                if ((dblClickYOffset - bottomOfLastTBPx) <= 20){ // new timeblock will start at the end of the last TB and be 30 mins
 
                     let newTBStartTime = existingTimeblocks[closestJunction.closestTBIndex].endTime
                     if (lastTBEndTimeMins % 5){
@@ -623,7 +628,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
                         closestJunction: closestJunction
                     }
                 } 
-                else if (yOffset > (bottomOfLastTBPx + lastTBEndTimeMinsFrom1159pm - 20)){ // new timeblock will end at 11:55pm and be 30 mins
+                else if (dblClickYOffset > (bottomOfLastTBPx + lastTBEndTimeMinsFrom1159pm - 20)){ // new timeblock will end at 11:55pm and be 30 mins
                     return {
                         newTB: { 
                             id: lastTBID + 1, 
@@ -639,7 +644,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
                     }
                 }
                 else{ // the user's dbl click yCoord is valid for dynamic placement
-                    let newTBStartTimeMinutesFromLastTBEnd = Math.floor(yOffset - bottomOfLastTBPx - 15)
+                    let newTBStartTimeMinutesFromLastTBEnd = Math.floor(dblClickYOffset - bottomOfLastTBPx - 15)
                     const newTBStartTimeMinutesFromLastTBEndMod5 = newTBStartTimeMinutesFromLastTBEnd % 5
                     newTBStartTimeMinutesFromLastTBEnd +=  newTBStartTimeMinutesFromLastTBEndMod5 > 0 ? 5 - (newTBStartTimeMinutesFromLastTBEndMod5) 
                                                                                           : 0
@@ -662,7 +667,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
 
             }
         }
-        else if ((yOffset - bottomOfLastTBPx) < 20){ // the location of the dbl click was close enough to the last TB to elicit touching
+        else if ((dblClickYOffset - bottomOfLastTBPx) < 20){ // the location of the dbl click was close enough to the last TB to elicit touching
 
             const newTBStartTime = existingTimeblocks[closestJunction.closestTBIndex].endTime
 
@@ -682,7 +687,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
         }
         else{ // dbl click was far enough from the last timeblock to elicit dynamic placement
 
-            let newTBStartTimeMinutesFromLastTBEnd = Math.floor(yOffset - bottomOfLastTBPx - 15)
+            let newTBStartTimeMinutesFromLastTBEnd = Math.floor(dblClickYOffset - bottomOfLastTBPx - 15)
             const newTBStartTimeMinutesFromLastTBEndMod5 = newTBStartTimeMinutesFromLastTBEnd % 5
             newTBStartTimeMinutesFromLastTBEnd +=  newTBStartTimeMinutesFromLastTBEndMod5 > 0 ? 5 - (newTBStartTimeMinutesFromLastTBEndMod5) 
                                                                                                 : 0
@@ -818,7 +823,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
             topOfLowerTB = timeblockLayoutData[closestJunction.closestTBIndex + 1].yOffset
         }
 
-        if (topOfLowerTB - yOffset < 20){ // the new timeblock would overlap the lower timeblock
+        if (topOfLowerTB - dblClickYOffset < 20){ // the new timeblock would overlap the lower timeblock
             return {
                 newTB: {
                     id: lastTBID + 1, 
@@ -833,7 +838,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
                 closestJunction: closestJunction
             }
         }
-        else if (yOffset - bottomOfUpperTB < 20){ // the new timeblock would overlap the upper timeblock
+        else if (dblClickYOffset - bottomOfUpperTB < 20){ // the new timeblock would overlap the upper timeblock
             return {
                 newTB: {
                     id: lastTBID + 1, 
@@ -849,7 +854,7 @@ export const getCreateTimeblockData = (yOffset, timeblockLayoutData, existingTim
             }
         }
         else{ // place the center of the timeblock where the dbl click occured
-            let newTBMinutesFromUpperTB = Math.floor(yOffset - bottomOfUpperTB - 15)
+            let newTBMinutesFromUpperTB = Math.floor(dblClickYOffset - bottomOfUpperTB - 15)
             const newTBMinutesFromUpperTBMod5 = newTBMinutesFromUpperTB % 5
             newTBMinutesFromUpperTB += newTBMinutesFromUpperTBMod5 > 0 ? 5 - newTBMinutesFromUpperTBMod5
                                                                        : 0
@@ -1232,6 +1237,8 @@ export const getPostDragAndDropData = (dropzoneIndex, onUpperTB, onLowerTB, drop
 export const getDropzone = (translationY, longPressYCoord, dropzoneData) => {
 
     translationY += longPressYCoord // subtract yCoord of longPress which is relative to the top of the timeblock
+
+    //console.log(translationY , "----")
 
     // find a valid dropzone which means translationY > minY[i] & translationY < maxY[i]
     for (i of range(dropzoneData.length)){
