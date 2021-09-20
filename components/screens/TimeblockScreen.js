@@ -1,4 +1,4 @@
-import {View, StyleSheet, ScrollView, TouchableWithoutFeedback, Text} from 'react-native'
+import {View, StyleSheet, ScrollView, TouchableWithoutFeedback, Text, TouchableNativeFeedback} from 'react-native'
 import React, {useEffect, useReducer, useState, useRef} from 'react'
 import UniversalNavbar from '../subcomponents/UniversalNavbar'
 import DateHeader from '../subcomponents/DateHeader'
@@ -292,45 +292,48 @@ const TimeblockScreen = ({route, navigation}) => {
                     showsVerticalScrollIndicator={false}
                     onScroll={e => setCurrentScrollDist(e.nativeEvent.contentOffset.y)}
                 >
-                <TouchableWithoutFeedback onPress={detectDoubleClick}>
-                    <View id="timeblocks" style={{marginTop: "6%", elevation: 1, zIndex: 1}}>
-                        { // render timeblocks with proper pixel offset
-                            mainState.timeblocks.length > 0 ? getTimeblockProps().map((timeblockTuple) =>{
-                                return (<Timeblock
-                                            key={mainState.timeblocks[timeblockTuple[0]].id}
-                                            id={mainState.timeblocks[timeblockTuple[0]].id}
-                                            taskName={mainState.timeblocks[timeblockTuple[0]].taskName}
-                                            startTime={mainState.timeblocks[timeblockTuple[0]].startTime}
-                                            endTime={mainState.timeblocks[timeblockTuple[0]].endTime}
-                                            offset={timeblockTuple[1]}
-                                            minutes={mainState.timeblocks[timeblockTuple[0]].minutes}
-                                            category={mainState.timeblocks[timeblockTuple[0]].category}
-                                            triggerEditTimeblockModal={triggerEditTimeblockModal}
-                                            sendNewTimes={onTimeblockTimeChange}
-                                            sendDragAndDropCompletion={onDragAndDropCompletion}
-                                            sendObject={handleTimeblockObjects}
-                                            currentTimeblocks={mainState.timeblocks}
-                                            currentLayoutData={{
-                                                layoutData: timeblockLayoutData,
-                                                numTimeblocks: mainState.timeblocks.length
-                                            }}
-                                            nextTimeblock={(mainState.timeblocks.length > timeblockTuple[0] + 1)
-                                                && (timeblockObjects.length >= mainState.timeblocks.length)
-                                                ? timeblockObjects.find(obj => {
-                                                    try{
-                                                        return obj.id == mainState.timeblocks[timeblockTuple[0] + 1].id
-                                                    }
-                                                    catch{
-                                                        return null
-                                                    }
-                                                }) 
-                                                : null  }
-                                            deleteTimeblock={onTimeblockDeletion}
-                                            thisTBIndex={timeblockTuple[0]}
-                                        />)
-                            }) : <Text style={styles.noTimeblocksText}>{"No timeblocks"}</Text>
-                        }
-                    </View>
+                    <TouchableWithoutFeedback onPress={detectDoubleClick}>
+                        <View id="timeblocks" style={{marginTop: "6%", elevation: 1, zIndex: 1}}>
+                            { // render timeblocks with proper pixel offset
+                                mainState.timeblocks.length > 0 ? getTimeblockProps().map((timeblockTuple) =>{
+                                    return (<Timeblock
+                                                key={mainState.timeblocks[timeblockTuple[0]].id}
+                                                id={mainState.timeblocks[timeblockTuple[0]].id}
+                                                taskName={mainState.timeblocks[timeblockTuple[0]].taskName}
+                                                startTime={mainState.timeblocks[timeblockTuple[0]].startTime}
+                                                endTime={mainState.timeblocks[timeblockTuple[0]].endTime}
+                                                offset={timeblockTuple[1]}
+                                                minutes={mainState.timeblocks[timeblockTuple[0]].minutes}
+                                                category={mainState.timeblocks[timeblockTuple[0]].category}
+                                                triggerEditTimeblockModal={triggerEditTimeblockModal}
+                                                sendNewTimes={onTimeblockTimeChange}
+                                                sendDragAndDropCompletion={onDragAndDropCompletion}
+                                                sendObject={handleTimeblockObjects}
+                                                currentTimeblocks={mainState.timeblocks}
+                                                currentLayoutData={{
+                                                    layoutData: timeblockLayoutData,
+                                                    numTimeblocks: mainState.timeblocks.length
+                                                }}
+                                                nextTimeblock={(mainState.timeblocks.length > timeblockTuple[0] + 1)
+                                                    && (timeblockObjects.length >= mainState.timeblocks.length)
+                                                    ? timeblockObjects.find(obj => {
+                                                        try{
+                                                            return obj.id == mainState.timeblocks[timeblockTuple[0] + 1].id
+                                                        }
+                                                        catch{
+                                                            return null
+                                                        }
+                                                    }) 
+                                                    : null  }
+                                                deleteTimeblock={onTimeblockDeletion}
+                                                thisTBIndex={timeblockTuple[0]}
+                                            />)
+                                }) : <Text style={styles.noTimeblocksText}>{"No timeblocks"}</Text>
+                            }
+                            {/* will capture sub-timeblock-View double clicks */}
+                            <View style={{height: "100%"}}>
+                            </View>
+                        </View>
                     </TouchableWithoutFeedback>
                     <View id="leftNumbers" style={{ marginTop: "3%", position: "absolute", elevation: 0, zIndex: 0 }}>
                         { // each numberTuple is of the form ["[1-12] [AM|PM]", [0-inf]]

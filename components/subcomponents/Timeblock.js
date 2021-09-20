@@ -43,7 +43,7 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
       setEndTimeState(endTime)
       
       const mins = getMinuteDifference(startTime, endTime)
-      dynamicHeight.value = mins <= 30 ? 30 : mins
+      dynamicHeight.value = mins <= 24 ? 30 : mins * 1.25
     }, [startTime, endTime])
 
     // write new taskName to storage
@@ -60,14 +60,26 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
 
     // for positioning and showing the delete btn
     const [showDeleteBtn, setShowDeleteBtn] = useState(false)
-    const currentHeight = useRef((minutes <= 30) ? 30 : minutes)
+    const currentHeight = useRef((minutes <= 24) ? 30 : minutes * 1.25)
     const currentOffset = useRef(offset)
 
+    // ensure that hitSlop is always up to speed
+    useEffect(() => {
+      setHitSlop(prevVal => {
+        try{
+          return {
+            ...prevVal,
+            top: -currentOffset.current
+          }
+        }
+        catch {}
+      })
+    }, [currentOffset.current])
 
     /* Pull methods and animation logic (not including validPullStates state var which is above) */
 
 
-    const dynamicHeight = useSharedValue((minutes <= 30) ? 30 : minutes) // negative or positive value indicating degree of contraction or expansion
+    const dynamicHeight = useSharedValue((minutes <= 24) ? 30 : minutes * 1.25) // negative or positive value indicating degree of contraction or expansion
 
     // dynamicOffset-related hooks and animation variables
     const dynamicOffset = useSharedValue(offset) // positive or zero value indicating offset from above timeblock in px; from top of ScrollView if first TB
@@ -79,6 +91,13 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
 
     const setDynamicOffset = (newOffset) => {
       dynamicOffset.value = withTiming(newOffset)
+      currentOffset.current = newOffset
+      setHitSlop(prevVal => {
+        return {
+          ...prevVal,
+          top: -newOffset
+        }
+      })
     }
 
     // send this timeblock's offset data to TimeblockScreen; called sendObject for when/if this becomes multifunctional
@@ -124,6 +143,7 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
 
       // make sure the new times dont overlap each other (startTime after endTime)
       if (getMinuteDifference(startTimeState, endTimeState) <= 0){
+
         // reset times because the user is a CLOWN :')
         setStartTimeState(startTime)
         setEndTimeState(endTime)
@@ -136,8 +156,9 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
           console.log("Next timeblock unavailable")
         }
         dynamicOffset.value = withTiming(offset)
+        currentOffset.current = offset
 
-        const originalHeight = minutes <= 30 ? 30 : minutes
+        const originalHeight = minutes <= 24 ? 30 : minutes * 1.25
         dynamicHeight.value = withTiming(originalHeight)
         currentHeight.current = originalHeight
 
@@ -183,7 +204,7 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
       
       // these two lines solve cross-hour expansion issues for the first and maybe last timeblocks
       const newMins = getMinuteDifference(startTimeState, endTimeState)
-      const newHeight = newMins <= 30 ? 30 : newMins
+      const newHeight = newMins <= 24 ? 30 : newMins * 1.25
       dynamicHeight.value = withTiming(newHeight)
       currentHeight.current = newHeight
 
@@ -241,10 +262,6 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
       // get timeblockIndex of dropzone + location of drop within dropzone; if dropzoneIndex = -1 -> invalid dropzone
       const dropzoneObj = getDropzone(translationY, longPressYCoord, dragAndDropData.dropzones)
 
-      /* console.log("--------------")
-      console.log(dragAndDropData)
-      console.log(dropzoneObj) */
-
       // send dropzone's timeblockIndex, thisTimeblockIndex, and userDraggedUp to TimeblockScreen for setting state and hitting DB
       if (dropzoneObj.dropzoneIndex != -1){
         sendDragAndDropCompletion(dropzoneObj, dragAndDropData.thisTBIndex, translationY < 0)
@@ -288,11 +305,13 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
 
             setLongPressFlag(true)
 
-            // set timeout for rotationdegrees
+            // set timeout for rotationDegrees
             setTimeout(() => rotationDegrees.value = withTiming(0), 2000)
           }}
           delayLongPress={500}
           onPress={() => {
+            console.log(hitSlop)
+
             // console.log(dynamicOffset.value, hitSlop, offset)
             if (isTimeblockPressable.current == true){
               triggerEditTimeblockModal(id) 
@@ -342,51 +361,56 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
                   setIsTimeblockBeingPulled(true)
 
                   // minutes to add relative to the start or end time; can be negative or positive
-                  let minutesToAdd = Math.floor(e.nativeEvent.translationY);
+                  let minutesToAdd = Math.floor(e.nativeEvent.translationY / 1.25);
                   if (clickedTop){
                     minutesToAdd *= -1
                   }
 
-                  if ((minutesToAdd % 5) != 0 || minutesToAdd == 0) { return }
+                  // only expand/contract the timeblock when the pull distance is within 1 minute of a multiple of 5
+                  if (Math.abs(minutesToAdd % 5) > 1 || minutesToAdd == 0) { return }
 
+                  // if the y velocity is too fast, only skip 10 minutes at a time
+                  if (e.nativeEvent.velocityY > 300 && (minutesToAdd % 10) > 1){ return }
+
+                  // round minutesToAdd to the nearest 5
+                  minutesToAdd += (Math.abs(minutesToAdd % 5) > 0) ? 5 - (minutesToAdd % 5) : 0
                   let newMinutes = minutes + minutesToAdd
-                  
+
                   // if the new times are valid, conduct the animation; else, just alter the displayed times
                   if (validateNewMinutes(minutesToAdd)){
 
-                    // if the y velocity is too fast, skip by 10 minutes at a time
-                    if (e.nativeEvent.velocityY > 300 && (minutesToAdd % 10) != 0){
-                      return
-                    }
-
                     // if the timeblock is big enough, expand or contract it
-                    dynamicHeight.value = withTiming(newMinutes <= 30 ? 30 : newMinutes)
+                    dynamicHeight.value = withTiming(newMinutes <= 24 ? 30 : newMinutes * 1.25)
 
                     // adjust this or the next timeblock's offset to balance out the new height/minutes
                     if (clickedTop){
-                      dynamicOffset.value = withTiming(offset - minutesToAdd, {duration: 250})
+                      const newOffset = offset - minutesToAdd * 1.25
+                      dynamicOffset.value = withTiming(newOffset, {duration: 250})
+                      currentOffset.current = newOffset
                     }
                     else{
                       try{
-                        nextTimeblock.setDynamicOffset(nextTimeblock.initialOffset - minutesToAdd)
+                        nextTimeblock.setDynamicOffset(nextTimeblock.initialOffset - minutesToAdd * 1.25)
                       }
                       catch{}
                     }
                   }
                   else{
                     /* 
-                      hitting this branch means the times are now out of order or overlap other timeblocks
-                      if overlapping, this timeblock will stop growing upon hitting the collided timeblock
+                      Hitting this branch means the times are now out of order or overlap other timeblocks
+
+                      If overlapping, this timeblock will stop growing upon hitting the collided timeblock
                     */
                     if (clickedTop && minutesToAdd > validPullStates.maxTopPullMinutes){
-                      const newHeight = minutes + validPullStates.maxTopPullMinutes
-                      dynamicHeight.value = withTiming(newHeight <= 30 ? 30 : newHeight, {duration: 100})
+                      const newMins = minutes + validPullStates.maxTopPullMinutes
+                      dynamicHeight.value = withTiming(newMins <= 24 ? 30 : newMins * 1.25, {duration: 100})
                       dynamicOffset.value = withTiming(0, {duration: 100})
+                      currentOffset.current = 0
                       minutesToAdd = minutesToAdd
                     }
                     else if (!clickedTop && minutesToAdd > validPullStates.maxBottomPullMinutes){
-                      const newHeight = minutes + validPullStates.maxBottomPullMinutes
-                      dynamicHeight.value = withTiming(newHeight <= 30 ? 30 : newHeight, {duration: 100})
+                      const newMins = minutes + validPullStates.maxBottomPullMinutes
+                      dynamicHeight.value = withTiming(newMins <= 24 ? 30 : newMins * 1.25, {duration: 100})
                       try{
                         nextTimeblock.setDynamicOffset(0)
                       }
@@ -414,7 +438,7 @@ const Timeblock = ({id, taskName, startTime, endTime, category, offset, minutes,
                     setHitSlop({
                       bottom: 0,
                       left: Math.abs(translateX.value) > 0 ? -30 : 0,
-                      top: -dynamicOffset.value,
+                      top: -currentOffset.current,
                       right: 0
                     })
                     validateAndCompleteTimeChange()

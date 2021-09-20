@@ -24,29 +24,29 @@ export const getValidPullStates = (thisTBIndex, startTime, endTime, currentTimeb
             maxTopPullMinutes: getMinutesOfTimeString(startTime),
             maxBottomPullMinutes: getMinuteDifference(endTime, "11:55 PM")
         }
-      }
+    }
 
-      // if this timeblock is the first timeblock, the max upwards pull is to this timeblock's starting hour
-      if (thisTBIndex == 0){
-        return {
-          maxTopPullMinutes: getMinutesOfTimeString(startTime),
-          maxBottomPullMinutes: getMinuteDifference(endTime, currentTimeblocks[thisTBIndex + 1].startTime)
-        }
-      }
-      // if this timeblock is the last timeblock, the max downwards pull is to the bottom of the screen
-      // max upwards pull depends on if this is the only timeblock
-      else if (thisTBIndex == currentTimeblocks.length - 1){ 
-        return {
-          maxTopPullMinutes: getMinuteDifference(currentTimeblocks[thisTBIndex - 1].endTime, startTime),
-          maxBottomPullMinutes: getMinuteDifference(endTime, "11:55 PM")
-        }
-      }
-      else{ // this is an intermediate timeblock
-        return {
-          maxTopPullMinutes: getMinuteDifference(currentTimeblocks[thisTBIndex - 1].endTime, startTime),
-          maxBottomPullMinutes: getMinuteDifference(endTime, currentTimeblocks[thisTBIndex + 1].startTime)
-        }
-      }
+    // if this timeblock is the first timeblock, the max upwards pull is to this timeblock's starting hour
+    if (thisTBIndex == 0){
+    return {
+        maxTopPullMinutes: getMinutesOfTimeString(startTime),
+        maxBottomPullMinutes: getMinuteDifference(endTime, currentTimeblocks[thisTBIndex + 1].startTime)
+    }
+    }
+    // if this timeblock is the last timeblock, the max downwards pull is to the bottom of the screen
+    // max upwards pull depends on if this is the only timeblock
+    else if (thisTBIndex == currentTimeblocks.length - 1){ 
+    return {
+        maxTopPullMinutes: getMinuteDifference(currentTimeblocks[thisTBIndex - 1].endTime, startTime),
+        maxBottomPullMinutes: getMinuteDifference(endTime, "11:55 PM")
+    }
+    }
+    else{ // this is an intermediate timeblock
+    return {
+        maxTopPullMinutes: getMinuteDifference(currentTimeblocks[thisTBIndex - 1].endTime, startTime),
+        maxBottomPullMinutes: getMinuteDifference(endTime, currentTimeblocks[thisTBIndex + 1].startTime)
+    }
+    }
 }
 
 
@@ -116,7 +116,7 @@ export const getTimeblocks = (routeParams, currentDate, mainDispatch) => {
     }
 }
 
-
+// determine the dropzone location + new times then implement them after validating
 export const executeDragAndDrop = (dropzoneObj, droppedTBIndex, userDraggedUp, timeblocks, orderedTimeblockIDs, mainDispatch, currentDate) => {
     /*
         postDragAndDropData = {
@@ -209,6 +209,7 @@ export const executeDragAndDrop = (dropzoneObj, droppedTBIndex, userDraggedUp, t
 }
 
 
+// get the minutes portion of a timeString as an integer
 export const getMinutesOfTimeString = (timeString) => {
     const colonIndex = timeString.indexOf(":")
     return parseInt(timeString.substring(colonIndex + 1, colonIndex + 3))
@@ -397,8 +398,6 @@ export const getCreateTimeblockData = (dblClickYOffset, timeblockLayoutData, exi
         }
     }
 
-    console.log(closestJunction)
-
     // this var will hold the amount that we have to shift the timeblocks below the new timeblock (will only shift while necessary)
     let shiftAmt = 0;
 
@@ -442,7 +441,7 @@ export const getCreateTimeblockData = (dblClickYOffset, timeblockLayoutData, exi
                 }
             }
             else{ // place the center of the timeblock where the user dbl clicked if possible
-                if (dblClickYOffset <= 20){ // new timeblock will start at 12am and be 30 mins
+                if (dblClickYOffset <= 21){ // new timeblock will start at 12am and be 30 mins
                     return {
                         newTB: { 
                             id: lastTBID + 1, 
@@ -473,7 +472,7 @@ export const getCreateTimeblockData = (dblClickYOffset, timeblockLayoutData, exi
                     }
                 }
                 else{ // we can place the middle of the timeblock where the user dbl clicked
-                    let newTBStartTimeMinutesFromFirstTB = Math.ceil((timeblockLayoutData[0].yOffset - dblClickYOffset) + 15)
+                    let newTBStartTimeMinutesFromFirstTB = Math.ceil((timeblockLayoutData[0].yOffset - dblClickYOffset) / 1.25 + 15)
                     const newTBStartTimeMinutesFromFirstTBMod5 = newTBStartTimeMinutesFromFirstTB % 5
                     newTBStartTimeMinutesFromFirstTB +=  newTBStartTimeMinutesFromFirstTBMod5 > 0 ? 5 - (newTBStartTimeMinutesFromFirstTBMod5) 
                                                                                                 : 0
@@ -495,7 +494,7 @@ export const getCreateTimeblockData = (dblClickYOffset, timeblockLayoutData, exi
                 }
             }
         }
-        // if there are <=15 mins available before the first timeblock (on the screen) or placing the center of the timeblock at the dbl click would
+        // if there are <=15 mins available before the first timeblock or placing the center of the timeblock at the dbl click would
         // lead to overlap, just place the new timeblock's endTime at the startTime of the first timeblock
         else if ((firstTBStartTimeMins <= 15) || ((dblClickYOffset + 20) >= timeblockLayoutData[0].yOffset)){
 
@@ -532,7 +531,7 @@ export const getCreateTimeblockData = (dblClickYOffset, timeblockLayoutData, exi
             }
         }
         else{ // there is room to place the center of the new timeblock at the yOffset of the dbl click
-            let newTBStartTimeMinutesFromFirstTB = Math.ceil(timeblockLayoutData[0].yOffset - dblClickYOffset + 15)
+            let newTBStartTimeMinutesFromFirstTB = Math.ceil((timeblockLayoutData[0].yOffset - dblClickYOffset) / 1.25 + 15)
             const newTBStartTimeMinutesFromFirstTBMod5 = newTBStartTimeMinutesFromFirstTB % 5
             newTBStartTimeMinutesFromFirstTB +=  newTBStartTimeMinutesFromFirstTBMod5 > 0 ? 5 - (newTBStartTimeMinutesFromFirstTBMod5) 
                                                                                           : 0
@@ -644,7 +643,7 @@ export const getCreateTimeblockData = (dblClickYOffset, timeblockLayoutData, exi
                     }
                 }
                 else{ // the user's dbl click yCoord is valid for dynamic placement
-                    let newTBStartTimeMinutesFromLastTBEnd = Math.floor(dblClickYOffset - bottomOfLastTBPx - 15)
+                    let newTBStartTimeMinutesFromLastTBEnd = Math.floor((dblClickYOffset - bottomOfLastTBPx) / 1.25 - 15)
                     const newTBStartTimeMinutesFromLastTBEndMod5 = newTBStartTimeMinutesFromLastTBEnd % 5
                     newTBStartTimeMinutesFromLastTBEnd +=  newTBStartTimeMinutesFromLastTBEndMod5 > 0 ? 5 - (newTBStartTimeMinutesFromLastTBEndMod5) 
                                                                                           : 0
@@ -687,7 +686,7 @@ export const getCreateTimeblockData = (dblClickYOffset, timeblockLayoutData, exi
         }
         else{ // dbl click was far enough from the last timeblock to elicit dynamic placement
 
-            let newTBStartTimeMinutesFromLastTBEnd = Math.floor(dblClickYOffset - bottomOfLastTBPx - 15)
+            let newTBStartTimeMinutesFromLastTBEnd = Math.floor((dblClickYOffset - bottomOfLastTBPx) / 1.25 - 15)
             const newTBStartTimeMinutesFromLastTBEndMod5 = newTBStartTimeMinutesFromLastTBEnd % 5
             newTBStartTimeMinutesFromLastTBEnd +=  newTBStartTimeMinutesFromLastTBEndMod5 > 0 ? 5 - (newTBStartTimeMinutesFromLastTBEndMod5) 
                                                                                                 : 0
@@ -854,7 +853,7 @@ export const getCreateTimeblockData = (dblClickYOffset, timeblockLayoutData, exi
             }
         }
         else{ // place the center of the timeblock where the dbl click occured
-            let newTBMinutesFromUpperTB = Math.floor(dblClickYOffset - bottomOfUpperTB - 15)
+            let newTBMinutesFromUpperTB = Math.floor((dblClickYOffset - bottomOfUpperTB) / 1.25 - 15)
             const newTBMinutesFromUpperTBMod5 = newTBMinutesFromUpperTB % 5
             newTBMinutesFromUpperTB += newTBMinutesFromUpperTBMod5 > 0 ? 5 - newTBMinutesFromUpperTBMod5
                                                                        : 0
@@ -899,8 +898,8 @@ export const computeLayoutData = (timeblocks) => {
     let layoutData = []
 
     // push the first timeblock's layout data
-    const firstTBHeight = timeblocks[0].minutes > 30 ? timeblocks[0].minutes : 30
-    let currentYOffset = getMinutesOfTimeString(timeblocks[0].startTime)
+    const firstTBHeight = timeblocks[0].minutes > 24 ? timeblocks[0].minutes * 1.25 : 30
+    let currentYOffset = getMinutesOfTimeString(timeblocks[0].startTime) * 1.25
     layoutData.push({
         heightPx: firstTBHeight,
         id: timeblocks[0].id,
@@ -911,9 +910,9 @@ export const computeLayoutData = (timeblocks) => {
     // push the rest
     for (let i=1; i<timeblocks.length; i++){
 
-        currentYOffset += getMinuteDifference(timeblocks[i - 1].endTime, timeblocks[i].startTime)
+        currentYOffset += getMinuteDifference(timeblocks[i - 1].endTime, timeblocks[i].startTime) * 1.25
 
-        const thisTBHeightPx = timeblocks[i].minutes > 30 ? timeblocks[i].minutes : 30
+        const thisTBHeightPx = timeblocks[i].minutes > 24 ? timeblocks[i].minutes * 1.25 : 30
         layoutData.push({
             heightPx: thisTBHeightPx,
             id: timeblocks[i].id,
@@ -1701,13 +1700,12 @@ export const getTimeblockTuples = (timeblocks) => {
 
     let timeblockTuples = [];
     
-    // appending first timeblock's data to the list; its offset will just be its minutes
-    const firstTBStartTimeColonIndex = timeblocks[0].startTime.indexOf(':');
+    // appending first timeblock's data to the list; its offset will just be its minutes * 1.25
     timeblockTuples.push(
         [
             0,
             // its startTime's minutes
-            parseInt(timeblocks[0].startTime.substring(firstTBStartTimeColonIndex + 1, firstTBStartTimeColonIndex + 3)),
+            getMinutesOfTimeString(timeblocks[0].startTime) * 1.25,
         ]
     );
 
@@ -1716,7 +1714,7 @@ export const getTimeblockTuples = (timeblocks) => {
         timeblockTuples.push(
             [
                 i,
-                getMinuteDifference(previousTBEndTime, timeblocks[i].startTime),
+                getMinuteDifference(previousTBEndTime, timeblocks[i].startTime) * 1.25,
             ]
         );
 
@@ -1726,7 +1724,7 @@ export const getTimeblockTuples = (timeblocks) => {
     return timeblockTuples;
 }
 
-// timeblocks -> set of hours (ex: "12 PM") that are in the timeblock start or end times
+// timeblocks -> set of hours (ex: "12 PM") that are in any timeblock's startTime or endTime
 export const getTimeblockHours = (timeblocks) => {
 
     if (!timeblocks || timeblocks.length == 0){
@@ -1843,26 +1841,26 @@ export const getTimeblockNumberTuples = (numbers, timeblocks) => {
     }
     
     /**
-    * The meat of this computation is accounting for timeblocks below 10 minutes since they are all the same height and therefore
-    * require extra space to keep the numbers' spacing to scale
+    * The meat of this computation is accounting for timeblocks below 24 minutes since they are all the same height and therefore
+    * require extra space to keep the TimeblockNumbers' spacing to scale
     */
 
     let numberTuples = [];
     let currentID; // this id is necessary for the map function during rendering 
     for (currentID=1; currentID<=numbers.length; currentID++) {
-        numberTuples.push([numbers[currentID - 1], 36, currentID])
+        numberTuples.push([numbers[currentID - 1], 55, currentID])
     };
 
     // adding extra height for smol timeblocks; need to take overlap into account here
     timeblocks.forEach(timeblock => {
-        if (timeblock.minutes < 30){
+        if (timeblock.minutes < 24){
         
             // getting the timeblock's starting hour of the form "4 AM"
             const timeblockStartingHour = timeblock.startTime.substring(0, timeblock.startTime.indexOf(":"))
             const timeblockAMorPM = timeblock.startTime.substring(timeblock.startTime.indexOf(":") + 4)
 
             // computing extra TimeblockNumber marginBottom
-            const extraHeight = 30 - timeblock.minutes;
+            const extraHeight = (24 - timeblock.minutes) * 1.25;
             let nextHourIndex;
             for (const numberTuple of numberTuples){
                 if (numberTuple[0] == `${timeblockStartingHour} ${timeblockAMorPM}`){
